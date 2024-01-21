@@ -1,6 +1,6 @@
 mod cli;
 
-use std::process;
+use std::{process,thread};
 
 use clap::Parser;
 use cli::Darklua;
@@ -10,7 +10,9 @@ use env_logger::{
 };
 use log::Level;
 
-fn main() {
+const STACK_SIZE: usize = 10 * 1024 * 1024 * 1024;
+
+fn run() {
     let darklua = Darklua::parse();
 
     let filter = darklua.get_log_level_filter();
@@ -23,6 +25,17 @@ fn main() {
             process::exit(err.exit_code());
         }
     }
+}
+
+fn main() {
+    // Spawn thread with explicit stack size
+    let child = thread::Builder::new()
+        .stack_size(STACK_SIZE)
+        .spawn(run)
+        .unwrap();
+
+    // Wait for thread to join
+    child.join().unwrap();
 }
 
 fn formatted_logger() -> Builder {
